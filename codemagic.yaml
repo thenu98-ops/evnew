@@ -1,0 +1,32 @@
+workflows:
+  android-build:
+    name: Android Build
+    instance_type: mac_mini_m1 # Or a suitable machine type
+    environment:
+      flutter: stable # Or your desired Flutter channel/version
+      java: 17 # Ensure Java 17 or higher is used
+    scripts:
+      - name: Flutter Clean
+        script: flutter clean
+      - name: Flutter Pub Get
+        script: flutter pub get
+      - name: Check AGP version
+        script: |
+          cd android
+          ./gradlew --version
+      - name: Check java version
+        script: |
+          java -version
+      - name: Android Build
+        script: |
+          cd android
+          ./gradlew assembleRelease # or assembleDebug for debug build
+    artifacts:
+      - android/app/build/outputs/apk/release/*.apk # Or debug apk path
+    publishing:
+      # Configure publishing to Google Play Store, etc. here
+      # Example for Google Play Store:
+      # google_play:
+      #   credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+      #   package_name: com.example.ev
+      #   track: alpha
