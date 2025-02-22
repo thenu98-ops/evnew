@@ -8,6 +8,9 @@ import '../services/firestore.dart';
 import 'firebase_options.dart';
 import 'splash_screen.dart';
 
+import '../services/payhere_service.dart';
+
+
 
 
 
@@ -34,6 +37,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      scaffoldMessengerKey: scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
 

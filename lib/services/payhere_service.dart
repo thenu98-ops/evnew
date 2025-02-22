@@ -1,155 +1,195 @@
+
+
+
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:payhere_mobilesdk_flutter/payhere_mobilesdk_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-// import 'package:flutter/material.dart';
-
-//  final TextEditingController _amountController = TextEditingController();
-
-
-
-// void startPayment() {
-//   PayHere.startPayment(
-//     paymentObject, 
-//     (paymentId) {
-//       print("One Time Payment Success. Payment Id: $paymentId");
-//     }, 
-//     (error) { 
-//       print("One Time Payment Failed. Error: $error");
-//     }, 
-//     () { 
-//       print("One Time Payment Dismissed");
-//     }
-//   );
-// }
-
-
 import 'package:flutter/material.dart';
-
-
-Map paymentObject = {
-  "sandbox": true,                 // true if using Sandbox Merchant ID
-  "merchant_id": "1229455",        // Replace your Merchant ID
-  "merchant_secret": "MzA1MDc1OTY4NzYzNjM4MzM1ODQxMjk2NTkwNTM1MTIzNTc3ODA=",        // See step 4e
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+Map<String, dynamic> paymentObject = {
+  "sandbox": true,
+  "merchant_id": "1229455",
+  "merchant_secret": "MzA1MDc1OTY4NzYzNjM4MzM1ODQxMjk2NTkwNTM1MTIzNTc3ODA=",
   "notify_url": "http://sample.com/notify",
   "order_id": "ItemNo12345",
   "items": "Hello from Flutter!",
-  "amount": "50000.00",
+  "amount": "500.00",
   "currency": "LKR",
-  "first_name": "Saman",
-  "last_name": "Perera",
-  "email": "samanp@gmail.com",
-  "phone": "0771234567",
-  "address": "No.1, Galle Road",
-  "city": "Colombo",
+  "first_name": "",
+  "last_name": "",
+  "email": "",
+  "phone": "",
+  "address": "",
+  "city": "",
   "country": "Sri Lanka",
   "delivery_address": "No. 46, Galle road, Kalutara South",
   "delivery_city": "Kalutara",
   "delivery_country": "Sri Lanka",
-  // "custom_1": "",
-  // "custom_2": ""
-};  
+};
 
-void startPayment() {
-  PayHere.startPayment(
-    paymentObject, 
-    (paymentId) {
-      print("One Time Payment Success. Payment Id: $paymentId");
-      
-    }, 
-    (error) { 
-      print("One Time Payment Failed. Error: $error");
-    }, 
-    () { 
-      print("One Time Payment Dismissed");
-    }
-  );
+// Fetch user details from Firebase and update paymentObject
+Future<void> updatePaymentObject() async {
+  User? user = FirebaseAuth.instance.currentUser;
+  if (user == null) return;
+
+  String userId = user.uid;
+  DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('profile').doc(userId).get();
+
+  if (userDoc.exists) {
+    Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+
+    paymentObject["first_name"] = userData['firstName'] ?? '';
+    paymentObject["last_name"] = userData['lastName'] ?? '';
+    paymentObject["email"] = userData['email'] ?? '';
+    paymentObject["phone"] = userData['phone'] ?? '';
+    paymentObject["address"] = userData['address'] ?? '';
+    paymentObject["city"] = userData['city'] ?? '';
+  }
 }
 
+// Start payment and update balance after successful payment
+// void startPayment(BuildContext context, double amount) async {
+//   await updatePaymentObject(); // Update paymentObject with user details
 
+//   paymentObject["amount"] = amount.toStringAsFixed(2);
 
-// void startPayment(String userId) {
+//   print("Starting Payment with Object: $paymentObject");
+
 //   PayHere.startPayment(
 //     paymentObject,
 //     (paymentId) async {
-//       print("One Time Payment Success. Payment Id: $paymentId");
-
-//       double paymentAmount = (paymentObject["amount"] as num).toDouble();
-
-//       // Reference to the user's profile document
-//       DocumentReference profileRef =
-//           FirebaseFirestore.instance.collection("profile").doc(userId);
-
-//       FirebaseFirestore.instance.runTransaction((transaction) async {
-//         DocumentSnapshot snapshot = await transaction.get(profileRef);
-
-//         if (snapshot.exists) {
-//           double currentBalance =
-//               ((snapshot.data() as Map<String, dynamic>)["balance"] as num?)?.toDouble() ?? 0.0;
-//           double updatedBalance = currentBalance + paymentAmount;
-
-//           transaction.update(profileRef, {"balance": updatedBalance});
-//         }
-//       });
+//       print("Payment Success. Payment Id: $paymentId");
+//       await updateBalance(amount);
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         SnackBar(content: Text("Payment Successful!"), backgroundColor: Colors.green),
+//       );
 //     },
 //     (error) {
-//       print("One Time Payment Failed. Error: $error");
+//       print("Payment Failed. Error: $error");
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         SnackBar(content: Text("Payment Failed!"), backgroundColor: Colors.red),
+//       );
 //     },
 //     () {
-//       print("One Time Payment Dismissed");
+//       print("Payment Dismissed");
 //     },
 //   );
 // }
 
+void startPayment(BuildContext context, double amount) async {
+  await updatePaymentObject();
+
+  paymentObject["amount"] = amount.toStringAsFixed(2);
+  print("Starting Payment with Object: $paymentObject");
+
+  PayHere.startPayment(
+    paymentObject,
+    (paymentId) async {
+      print("Payment Success. Payment Id: $paymentId");
+      await updateBalance(amount);
+
+      scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text("Payment Successful!"), backgroundColor: Colors.green),
+      );
+    },
+    (error) {
+      print("Payment Failed. Error: $error");
+
+      scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text("Payment Failed!"), backgroundColor: Colors.red),
+      );
+    },
+    () {
+      print("Payment Dismissed");
+    },
+  );
+}
 
 
+// Add paid amount to previous balance in Firebase
+Future<void> updateBalance(double amount) async {
+  User? user = FirebaseAuth.instance.currentUser;
+  if (user == null) {
+    print("❌ No user found!"); 
+    return;
+  }
+
+  String userId = user.uid;
+  DocumentReference userRef = FirebaseFirestore.instance.collection('profile').doc(userId);
+
+  await FirebaseFirestore.instance.runTransaction((transaction) async {
+    DocumentSnapshot userDoc = await transaction.get(userRef);
+
+    if (!userDoc.exists) {
+      print("❌ User document does not exist!"); 
+      return;
+    }
+
+    // Fetch previous balance as double
+    double previousBalance = (userDoc.data() as Map<String, dynamic>)["balance"]?.toDouble() ?? 0.0;
+    double newBalance = previousBalance + amount;
+
+    print("✅ Previous Balance: $previousBalance, Adding: $amount, New Balance: $newBalance"); 
+
+    transaction.update(userRef, {"balance": newBalance});
+    print("✅ Balance updated successfully!");
+  }).catchError((error) {
+    print("❌ Error updating balance: $error");
+  });
+}
+
+
+
+// Dialog to enter payment amount
 void onRechargeTap(BuildContext context) {
   TextEditingController amountController = TextEditingController();
 
   showDialog(
     context: context,
     builder: (context) {
-      return AlertDialog(
-        title: Text("Enter Amount"),
-        content: TextField(
-          controller: amountController,
-          keyboardType: TextInputType.number, // Numeric keyboard
-          decoration: InputDecoration(
-            hintText: "Enter amount",
+      return Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: AlertDialog(
+          title: Text("Enter Amount"),
+          content: TextField(
+            controller: amountController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(hintText: "Enter amount"),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog on cancel
-            },
-            child: Text("Cancel"),
-          ),
-          TextButton(
-            onPressed: () {
-              String amountText = amountController.text;
-              double? amount = double.tryParse(amountText);
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                String amountText = amountController.text;
+                double? amount = double.tryParse(amountText);
 
-              if (amount == null || amount < 100) {
-                // Show error message if amount is invalid
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("Please enter a valid amount (minimum 100)"),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              } else {
-                // Update amount in paymentObject
-                paymentObject["amount"] = amountText;
-                // User? user = FirebaseAuth.instance.currentUser;
-                startPayment(); // Start payment process
-                Navigator.pop(context); // Close dialog after confirmation
-              }
-            },
-            child: Text("Confirm"),
-          ),
-        ],
+                if (amount == null || amount < 100) {
+                  Future.delayed(Duration(milliseconds: 100), () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Please enter a valid amount (minimum 100)"),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  });
+                } else {
+                  Navigator.pop(context); // Close the dialog first
+                  Future.delayed(Duration(milliseconds: 100), () {
+                    startPayment(context, amount);
+                  });
+                }
+              },
+              child: Text("Confirm"),
+            ),
+          ],
+        ),
       );
     },
   );
 }
-
