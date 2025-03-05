@@ -4,6 +4,7 @@ import 'pages/e_wallet_screen.dart';
 import 'package:ev/pages/profile_screen.dart';
 import 'pages/search_screen.dart';
 import 'register.dart';
+import 'pages/charging_screen.dart';
 
 class NavigationPage extends StatefulWidget {
   const NavigationPage({Key? key}) : super(key: key);
@@ -17,8 +18,10 @@ class _NavigationPageState extends State<NavigationPage> {
 
   final List<Widget> _screens = [
     const EWalletScreen(),
+    const ChargingScreen(),
     const SearchScreen(),
     const ProfileScreen(),
+    
   ];
 
   void _onItemTapped(int index) {
@@ -45,8 +48,10 @@ class _NavigationPageState extends State<NavigationPage> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildNavItem(Icons.account_balance_wallet, "eWallet", 0),
-                _buildNavItem(Icons.search, "Search", 1),
-                _buildNavItem(Icons.person_2_rounded, "Profile", 2),
+                _buildNavItem(Icons.ev_station, "Charging", 1),
+                _buildNavItem(Icons.search, "Search", 2),
+                _buildNavItem(Icons.person_2_rounded, "Profile", 3),
+                
               ],
             ),
           ),

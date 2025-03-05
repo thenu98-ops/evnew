@@ -2,6 +2,8 @@
                 package="com.example.ev"                              
                 xmlns:tools="http://schemas.android.com/tools"                 >
  <uses-permission android:name="android.permission.INTERNET" />
+     <!-- Add the CAMERA permission -->
+    <uses-permission android:name="android.permission.CAMERA" />
     <application
         android:label="ev"
         tools:replace="android:label"
