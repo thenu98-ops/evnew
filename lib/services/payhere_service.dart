@@ -2,6 +2,7 @@
 
 
 
+import 'package:ev/pages/charging_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:payhere_mobilesdk_flutter/payhere_mobilesdk_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -45,6 +46,8 @@ Future<void> updatePaymentObject() async {
     paymentObject["phone"] = userData['phone'] ?? '';
     paymentObject["address"] = userData['address'] ?? '';
     paymentObject["city"] = userData['city'] ?? '';
+
+    
   }
 }
 
@@ -142,7 +145,28 @@ Future<void> updateBalance(double amount) async {
 
 
 // Dialog to enter payment amount
-void onRechargeTap(BuildContext context) {
+void onRechargeTap(BuildContext context) async {
+  User? user = FirebaseAuth.instance.currentUser;
+  if (user == null) return;
+
+  String userId = user.uid;
+  DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('profile').doc(userId).get();
+
+  if (userDoc.exists) {
+    Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+    bool isCharging = userData['isCharging'] ?? false;
+
+    if (isCharging) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Stop Charging before topping up your wallet."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+  }
+
   TextEditingController amountController = TextEditingController();
 
   showDialog(
@@ -193,3 +217,4 @@ void onRechargeTap(BuildContext context) {
     },
   );
 }
+

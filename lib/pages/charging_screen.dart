@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 import 'charging_history.dart';
 
+bool isRecharging = false;
+
 class ChargingScreen extends StatefulWidget {
   const ChargingScreen({super.key});
 
@@ -73,6 +75,7 @@ class _ChargingScreenState extends State<ChargingScreen> {
           // Start charging
           await _firestore.collection('profile').doc(user.uid).update({
             'isCharging': true,
+            
           });
 
           await _firestore.collection('station_control').doc(referenceCode).update({
